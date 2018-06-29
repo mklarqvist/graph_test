@@ -16,16 +16,17 @@ namespace javelin{
  * Graph: edge-driven -> G = (V,E)
  */
 class Graph{
-public:
-	typedef Graph           self_type;
-	typedef Node            node_type;
-    typedef Edge            edge_type;
-    typedef EdgeContainer   edge_container_type;
-    typedef EdgeReferenceContainer   edge_reference_container_type;
-    typedef NodeContainer   node_container_type;
-    typedef std::size_t     size_type;
+private:
+	typedef Graph                  self_type;
+	typedef Node                   node_type;
+	typedef Edge                   edge_type;
+	typedef EdgeContainer          edge_container_type;
+	typedef EdgeReferenceContainer edge_reference_container_type;
+	typedef NodeContainer          node_container_type;
+    typedef std::size_t            size_type;
     typedef tomahawk::totempole::HeaderContig contig_type;
-    typedef tomahawk::io::OutputEntry  twk_entry_type;
+    typedef tomahawk::TomahawkOutputReader    two_reader_type;
+    typedef tomahawk::io::OutputEntry         twk_entry_type;
 
 public:
     Graph(void) :
@@ -45,18 +46,43 @@ public:
     }
 
     ~Graph(){
-    	if(edge_grid_ != nullptr){
-    		for(U32 i = 0; i < this->n_grid_size_ ; ++i){
-    			for(U32 j = 0; j < this->n_grid_size_ ; ++j){
-    				((&this->edge_grid_[i][j])->~Edge());
-    			}
-    			::operator delete[](static_cast<void*>(this->edge_grid_[i]));
-    		}
-    		::operator delete[](static_cast<void*>(this->edge_grid_));
-    	}
+    	this->clearEdgeGrid();
     }
 
-    //
+    /**<
+     * Constructs the [N,N] grid-matrix of edges and N vector of vertices
+     * @param two_reader Input Tomahawk TWO reader instance
+     * @return           Returns TRUE upon success or FALSE otherwise
+     */
+    bool build(const two_reader_type& two_reader){
+    	const U32 n_contigs = two_reader.getHeader().getMagic().getNumberContigs();
+		if(n_contigs == 0){
+			std::cerr << "No contig data! Corrupted..." << std::endl;
+			return(false);
+		}
+
+		std::cerr << "Adding: " << n_contigs << " nodes..." << std::endl;
+
+		for(U32 i = 0; i < n_contigs; ++i){
+			this->addNode(&two_reader.getHeader().contigs_[i]);
+		}
+
+		// Cleanup potential prior grid
+		this->clearEdgeGrid();
+
+		if(this->buildGrid(n_contigs) == false){
+			std::cerr << "failed to build grid..." << std::endl;
+			return(false);
+		}
+
+		return(true);
+    }
+
+    /**<
+     * Construct a [N,N]-matrix of edges
+     * @param n_cells Number of columns/rows
+     * @return        Returns TRUE upon success or FALSE otherwise
+     */
     bool buildGrid(const U16 n_cells){
     	this->n_grid_size_ = n_cells;
     	if(this->nodes_.size() != n_cells){
@@ -75,6 +101,24 @@ public:
     	return true;
     }
 
+    /**<
+     * Collapsed a [N,N]-matrix of edges into a linear container of edges.
+     * @param filter_empty Should empty values be filtered out? Defaults to TRUE
+     * @return             Returns TRUE upon success or FALSE othewise
+     */
+    bool linearlizeGridMatrix(const bool filter_empty = true){
+    	for(U32 i = 0; i < this->n_grid_size_; ++i){
+			for(U32 j = 0; j < this->n_grid_size_; ++j){
+				if(this->edge_grid_[i][j].hasConnectivity() == false && filter_empty)
+					continue;
+
+				this->edges_ += this->edge_grid_[i][j];
+			}
+    	}
+    	std::cerr << "edges now: " << this->edges_.size() << " down from " << this->n_grid_size_*this->n_grid_size_ << std::endl;
+    	return(true);
+    }
+
     inline void operator+=(const twk_entry_type& twk_entry){ this->edge_grid_[twk_entry.AcontigID][twk_entry.BcontigID] += twk_entry; }
 
     // Capacity
@@ -88,6 +132,21 @@ public:
     inline self_type& addNode(contig_type* contig){ this->nodes_ += node_type(this->nodes_.size(), contig); return(*this); }
     inline self_type& addEdge(const edge_type& edge){ this->edges_ += edge; return(*this); }
     inline self_type& addEdge(const edge_type* const edge){ this->edges_ += *edge; return(*this); }
+
+    /**<
+     * Destroys the current [N,N]-edge grid matrix if available
+     */
+    void clearEdgeGrid(void){
+    	if(edge_grid_ != nullptr){
+			for(U32 i = 0; i < this->n_grid_size_ ; ++i){
+				for(U32 j = 0; j < this->n_grid_size_ ; ++j){
+					((&this->edge_grid_[i][j])->~Edge());
+				}
+				::operator delete[](static_cast<void*>(this->edge_grid_[i]));
+			}
+			::operator delete[](static_cast<void*>(this->edge_grid_));
+		}
+    }
 
 public:
     U32 n_grid_size_;
@@ -122,12 +181,9 @@ int main(int argc, char** argv){
 
 	std::cerr << "Adding: " << n_contigs << " nodes..." << std::endl;
 	javelin::Graph graph(n_contigs + 10); // max capacity in ctor
-	for(U32 i = 0; i < n_contigs; ++i){
-		graph.addNode(&two_reader.getHeader().contigs_[i]);
-	}
-	if(graph.buildGrid(n_contigs) == false){
-		std::cerr << "failed to build grid..." << std::endl;
-		return(1);
+	if(graph.build(two_reader) == false){
+		std::cerr << "failed" << std::endl;
+		return false;
 	}
 
 	U64 b_total_uncompressed = 0;
@@ -172,6 +228,12 @@ int main(int argc, char** argv){
 					(U64)graph.edge_grid_[i][j].right_BB_.n_total << "\t" <<
 					largest_score.mean << "\t" << largest_score.total << "\t" << largest_score.n_total << "\t" << largest_score.standard_deviation << std::endl;
 		}
+	}
+
+	std::cerr << "Linearize" << std::endl;
+	if(graph.linearlizeGridMatrix(true) == false){
+		std::cerr << "failed linearlization" << std::endl;
+		return(1);
 	}
 
 

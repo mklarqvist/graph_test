@@ -126,6 +126,8 @@ public:
 
 			this->n_size_ = new_size;
 			return;
+		} else {
+			this->n_capacity_ = new_size;
 		}
 
 		pointer old = this->nodes_;

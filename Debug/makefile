@@ -43,7 +43,7 @@ all: graph
 graph: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross G++ Linker'
-	g++ -L/home/mk21/Repos/tomahawk/ -Ltomahawk/ -o "graph" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L/home/mk21/Repos/tomahawk/ -L../tomahawk/ -o "graph" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

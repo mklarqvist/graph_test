@@ -109,7 +109,7 @@ public:
 	// Overload
 	inline self_type& operator+=(const_reference edge){
 		if(this->size() + 1 == this->capacity()){
-			std::cerr << "is full" << std::endl;
+			std::cerr << "is full -> resize: " << this->size()+1 << "/" << this->capacity() << std::endl;
 			this->resize();
 			return(*this);
 		}
@@ -119,13 +119,15 @@ public:
 	}
 
 	void resize(const size_t new_size){
-		if(new_size < this->capacity()){
+		if(new_size <= this->capacity()){
 			// Delete data from `new_size` until `this->size()`
 			for(size_t i = new_size; i < this->size(); ++i)
 				((this->edges_ + i)->~Edge)();
 
 			this->n_size_ = new_size;
 			return;
+		} else {
+			this->n_capacity_ = new_size;
 		}
 
 		pointer old = this->edges_;

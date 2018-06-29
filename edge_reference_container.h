@@ -127,6 +127,8 @@ public:
 		if(new_size < this->capacity()){
 			this->n_size_ = new_size;
 			return;
+		} else {
+			this->n_capacity_ = new_size;
 		}
 
 		double_pointer old = this->edges_;
