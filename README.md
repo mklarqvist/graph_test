@@ -1,4 +1,6 @@
 ```bash
+git clone https://github.com/mklarqvist/graph_test
+cd graph_test
 git clone --recursive https://github.com/mklarqvist/tomahawk
 cd tomahawk
 make
