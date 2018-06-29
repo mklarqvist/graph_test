@@ -205,36 +205,36 @@ int main(int argc, char** argv){
 		}
 	}
 
-	std::cerr << "Cycling over: [" << graph.n_grid_size_ << "," << graph.n_grid_size_ << "] matrix..." << std::endl;
-	for(U32 i = 0; i < graph.n_grid_size_; ++i){
-		for(U32 j = 0; j < graph.n_grid_size_; ++j){
-			if(graph.edge_grid_[i][j].hasConnectivity() == false){
-				std::cerr << "filter no connectivity" << std::endl;
-				continue;
-			}
-
-			graph.edge_grid_[i][j].computeStatistics();
-			javelin::SummaryStatistics& largest_score = graph.edge_grid_[i][j].getLargestScore();
-			std::cout << i << "\t" << j << "\t" <<
-					graph.nodes_[i].parent_contig_->name << "\t" << graph.nodes_[j].parent_contig_->name << "\t" <<
-					(U64)graph.edge_grid_[i][j].left_AA_.n_total << "\t" <<
-					(U64)graph.edge_grid_[i][j].left_AB_.n_total << "\t" <<
-					(U64)graph.edge_grid_[i][j].left_BA_.n_total << "\t" <<
-					(U64)graph.edge_grid_[i][j].left_BB_.n_total << "\t" <<
-
-					(U64)graph.edge_grid_[i][j].right_AA_.n_total << "\t" <<
-					(U64)graph.edge_grid_[i][j].right_AB_.n_total << "\t" <<
-					(U64)graph.edge_grid_[i][j].right_BA_.n_total << "\t" <<
-					(U64)graph.edge_grid_[i][j].right_BB_.n_total << "\t" <<
-					largest_score.mean << "\t" << largest_score.total << "\t" << largest_score.n_total << "\t" << largest_score.standard_deviation << std::endl;
-		}
-	}
-
 	std::cerr << "Linearize" << std::endl;
 	if(graph.linearlizeGridMatrix(true) == false){
 		std::cerr << "failed linearlization" << std::endl;
 		return(1);
 	}
+
+	std::cerr << "Cycling over: [" << graph.n_grid_size_ << "," << graph.n_grid_size_ << "] matrix..." << std::endl;
+	for(auto it = graph.edges_.begin(); it != graph.edges_.end(); ++it){
+		it->computeStatistics();
+		javelin::SummaryStatistics& largest_score = it->getLargestScore();
+
+		std::cout <<
+				 it->node_in_->parent_contig_->name << "\t" <<
+				 it->node_out_->parent_contig_->name << "\t" <<
+			(U64)it->left_AA_.n_total << "\t" <<
+			(U64)it->left_AB_.n_total << "\t" <<
+			(U64)it->left_BA_.n_total << "\t" <<
+			(U64)it->left_BB_.n_total << "\t" <<
+
+			(U64)it->right_AA_.n_total << "\t" <<
+			(U64)it->right_AB_.n_total << "\t" <<
+			(U64)it->right_BA_.n_total << "\t" <<
+			(U64)it->right_BB_.n_total << "\t" <<
+			     largest_score.mean    << "\t" <<
+				 largest_score.total   << "\t" <<
+				 largest_score.n_total << "\t" <<
+				 largest_score.standard_deviation << std::endl;
+	}
+
+	return(0);
 
 
 	graph.addNode(javelin::Node(1, &two_reader.getHeader().contigs_[1])).addNode(javelin::Node(2, &two_reader.getHeader().contigs_[2])).addNode(javelin::Node(9,&two_reader.getHeader().contigs_[9]));

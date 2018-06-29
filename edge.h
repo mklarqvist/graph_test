@@ -134,7 +134,15 @@ public:
 	Edge(const self_type& other) :
 		hasVisited_(other.hasVisited_),
 		node_in_(other.node_in_),
-		node_out_(other.node_out_)
+		node_out_(other.node_out_),
+		left_AA_(other.left_AA_),
+		left_AB_(other.left_AB_),
+		left_BA_(other.left_BA_),
+		left_BB_(other.left_BB_),
+		right_AA_(other.right_AA_),
+		right_AB_(other.right_AB_),
+		right_BA_(other.right_BA_),
+		right_BB_(other.right_BB_)
 	{
 
 	}
@@ -204,7 +212,7 @@ public:
 	bool          hasVisited_;
 	const_pointer node_in_;
 	const_pointer node_out_;
-	score_type    left_AA_, left_AB_, left_BA_, left_BB_;
+	score_type    left_AA_,  left_AB_,  left_BA_,  left_BB_;
 	score_type    right_AA_, right_AB_, right_BA_, right_BB_;
 };
 
